@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/dotBlob/dotBlob.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/dotBlob.Tests/dotBlob.Tests.csproj" />
+  </Folder>
+</Solution>
