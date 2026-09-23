@@ -2,11 +2,14 @@
 
 public sealed class DiskBlobStorage(DiskBlobStorageOptions options)
 {
+    private const string BlobExtension = ".blob";
+
     public async Task<BlobDescriptor> SaveAsync(Stream stream, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(stream);
         var gid = Guid.CreateVersion7();
-        var path = Path.Combine(options.BasePath, gid.ToString("N"));
+        var filename = gid.ToString("N");
+        var path = Path.Combine(options.BasePath, filename + BlobExtension);
         await using var fStream = File.Create(path);
         await stream.CopyToAsync(fStream, ct);
         return new BlobDescriptor

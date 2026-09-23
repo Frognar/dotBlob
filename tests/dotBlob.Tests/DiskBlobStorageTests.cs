@@ -30,6 +30,18 @@ public class DiskBlobStorageTests
     }
 
     [Fact]
+    public async Task SaveAsync_CreatesFileWithBlobExtension()
+    {
+        using var root = new TempDirectory();
+        var sut = new DiskBlobStorage(new() { BasePath = root.Path });
+
+        var result = await sut.SaveAsync(new MemoryStream([1, 2, 3]));
+
+        Assert.EndsWith(".blob", result.FullPath);
+        Assert.True(File.Exists(result.FullPath));
+    }
+
+    [Fact]
     public async Task SaveAsync_NullStream_ThrowsArgumentNullException()
     {
         using var root = new TempDirectory();
