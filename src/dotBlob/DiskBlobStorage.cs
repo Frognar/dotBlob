@@ -8,6 +8,7 @@ public sealed class DiskBlobStorage(DiskBlobStorageOptions options)
     {
         ArgumentNullException.ThrowIfNull(stream);
         var path = CreateBlobPath();
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         try
         {
             var length = await CopyToFileAsync(stream, path, ct);
@@ -26,7 +27,7 @@ public sealed class DiskBlobStorage(DiskBlobStorageOptions options)
     private string CreateBlobPath()
     {
         var filename = Guid.CreateVersion7().ToString("N");
-        return Path.Combine(options.BasePath, filename + BlobExtension);
+        return Path.Combine(options.BasePath, filename[..2], filename[2..4], filename + BlobExtension);
     }
 
     private static async Task<long> CopyToFileAsync(Stream source, string path, CancellationToken ct)
