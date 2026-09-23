@@ -4,13 +4,14 @@ public sealed class DiskBlobStorage(DiskBlobStorageOptions options)
 {
     public async Task<BlobDescriptor> SaveAsync(Stream stream, CancellationToken ct = default)
     {
-        Guid gid = Guid.CreateVersion7();
+        var gid = Guid.CreateVersion7();
         var path = Path.Combine(options.BasePath, gid.ToString("N"));
-        await using var _ = File.Create(path);
-        return new BlobDescriptor()
+        await using var fStream = File.Create(path);
+        await stream.CopyToAsync(fStream, ct);
+        return new BlobDescriptor
         {
             FullPath = path,
-            SizeBytes = 0,
+            SizeBytes = fStream.Length,
         };
     }
 }
