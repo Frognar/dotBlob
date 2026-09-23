@@ -7,17 +7,13 @@ public sealed class DiskBlobStorage(DiskBlobStorageOptions options)
     public async Task<BlobDescriptor> SaveAsync(Stream stream, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(stream);
-        var gid = Guid.CreateVersion7();
-        var filename = gid.ToString("N");
-        var path = Path.Combine(options.BasePath, filename + BlobExtension);
+        var path = CreateBlobPath();
         try
         {
-            await using var fStream = File.Create(path);
-            await stream.CopyToAsync(fStream, ct);
-            return new BlobDescriptor
-            {
+            var length = await CopyToFileAsync(stream, path, ct);
+            return new BlobDescriptor {
                 FullPath = path,
-                SizeBytes = fStream.Length,
+                SizeBytes = length,
             };
         }
         catch (IOException)
@@ -25,6 +21,19 @@ public sealed class DiskBlobStorage(DiskBlobStorageOptions options)
             File.Delete(path);
             throw;
         }
+    }
+
+    private string CreateBlobPath()
+    {
+        var filename = Guid.CreateVersion7().ToString("N");
+        return Path.Combine(options.BasePath, filename + BlobExtension);
+    }
+
+    private static async Task<long> CopyToFileAsync(Stream source, string path, CancellationToken ct)
+    {
+        await using var destination = File.Create(path);
+        await source.CopyToAsync(destination, ct);
+        return destination.Length;
     }
 }
 
