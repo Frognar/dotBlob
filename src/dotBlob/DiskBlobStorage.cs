@@ -10,13 +10,21 @@ public sealed class DiskBlobStorage(DiskBlobStorageOptions options)
         var gid = Guid.CreateVersion7();
         var filename = gid.ToString("N");
         var path = Path.Combine(options.BasePath, filename + BlobExtension);
-        await using var fStream = File.Create(path);
-        await stream.CopyToAsync(fStream, ct);
-        return new BlobDescriptor
+        try
         {
-            FullPath = path,
-            SizeBytes = fStream.Length,
-        };
+            await using var fStream = File.Create(path);
+            await stream.CopyToAsync(fStream, ct);
+            return new BlobDescriptor
+            {
+                FullPath = path,
+                SizeBytes = fStream.Length,
+            };
+        }
+        catch (IOException)
+        {
+            File.Delete(path);
+            throw;
+        }
     }
 }
 

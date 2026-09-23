@@ -56,4 +56,15 @@ public class DiskBlobStorageTests
         Assert.Throws<ArgumentException>(
             () => new DiskBlobStorage(new DiskBlobStorageOptions { BasePath = "" }));
     }
+
+    [Fact]
+    public async Task SaveAsync_FailureDuringCopy_NoFinalBlobCreated()
+    {
+        using var root = new TempDirectory();
+        var sut = new DiskBlobStorage(new DiskBlobStorageOptions { BasePath = root.Path });
+        await using var failingStream = new FailingReadStream(failAfter: 3);
+
+        await Assert.ThrowsAsync<IOException>(() => sut.SaveAsync(failingStream));
+        Assert.Empty(Directory.GetFiles(root.Path, "*.blob"));
+    }
 }
