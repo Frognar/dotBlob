@@ -7,6 +7,11 @@ public sealed class DiskBlobStorage(DiskBlobStorageOptions options)
     public async Task<BlobDescriptor> SaveAsync(Stream stream, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(stream);
+        if (options.MaxBlobSizeBytes > 0 && stream.Length > options.MaxBlobSizeBytes)
+        {
+            throw new BlobSizeLimitExceededException();
+        }
+
         var path = CreateBlobPath();
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         try
@@ -49,6 +54,8 @@ public sealed record DiskBlobStorageOptions
             field = value;
         }
     }
+
+    public long MaxBlobSizeBytes { get; init; }
 }
 
 public sealed record BlobDescriptor
@@ -56,3 +63,5 @@ public sealed record BlobDescriptor
     public required string FullPath { get; init; }
     public required long SizeBytes { get; init; }
 }
+
+public sealed class BlobSizeLimitExceededException : Exception;

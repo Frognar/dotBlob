@@ -83,4 +83,16 @@ public class DiskBlobStorageTests
         Assert.Matches("^[0-9a-f]{2}$", expectedDirs[0]);
         Assert.Matches("^[0-9a-f]{2}$", expectedDirs[1]);
     }
+
+    [Fact]
+    public async Task SaveAsync_ExceedsMaxBlobSize_ThrowsAndLeavesNoFile()
+    {
+        using var root = new TempDirectory();
+        var sut = new DiskBlobStorage(new DiskBlobStorageOptions { BasePath = root.Path, MaxBlobSizeBytes = 5 });
+        var data = new byte[10];
+
+        await Assert.ThrowsAsync<BlobSizeLimitExceededException>(() => sut.SaveAsync(new MemoryStream(data)));
+
+        Assert.Empty(Directory.GetFiles(root.Path, "*.blob", SearchOption.AllDirectories));
+    }
 }
