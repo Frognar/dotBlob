@@ -37,4 +37,11 @@ public class DiskBlobStorageTests
 
         await Assert.ThrowsAsync<ArgumentNullException>(() => sut.SaveAsync(null!));
     }
+
+    [Fact]
+    public void Ctor_EmptyBasePath_ThrowsArgumentException()
+    {
+        Assert.Throws<ArgumentException>(
+            () => new DiskBlobStorage(new DiskBlobStorageOptions { BasePath = "" }));
+    }
 }

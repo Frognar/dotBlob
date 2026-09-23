@@ -19,7 +19,15 @@ public sealed class DiskBlobStorage(DiskBlobStorageOptions options)
 
 public sealed record DiskBlobStorageOptions
 {
-    public required string BasePath { get; init; }
+    public required string BasePath
+    {
+        get;
+        init
+        {
+            ArgumentException.ThrowIfNullOrEmpty(value);
+            field = value;
+        }
+    }
 }
 
 public sealed record BlobDescriptor
