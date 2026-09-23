@@ -1,4 +1,7 @@
 <Solution>
+  <Folder Name="/solution-items/">
+    <File Path="global.json" />
+  </Folder>
   <Folder Name="/src/">
     <Project Path="src/dotBlob/dotBlob.csproj" />
   </Folder>
