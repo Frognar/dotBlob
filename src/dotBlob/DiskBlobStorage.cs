@@ -6,7 +6,7 @@ public sealed class DiskBlobStorage(DiskBlobStorageOptions options)
     {
         Guid gid = Guid.CreateVersion7();
         var path = Path.Combine(options.BasePath, gid.ToString("N"));
-        File.Create(path);
+        await using var _ = File.Create(path);
         return new BlobDescriptor()
         {
             FullPath = path,
