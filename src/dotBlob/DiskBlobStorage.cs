@@ -4,6 +4,7 @@ public sealed class DiskBlobStorage(DiskBlobStorageOptions options)
 {
     public async Task<BlobDescriptor> SaveAsync(Stream stream, CancellationToken ct = default)
     {
+        ArgumentNullException.ThrowIfNull(stream);
         var gid = Guid.CreateVersion7();
         var path = Path.Combine(options.BasePath, gid.ToString("N"));
         await using var fStream = File.Create(path);

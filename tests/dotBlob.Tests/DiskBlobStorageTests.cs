@@ -28,4 +28,13 @@ public class DiskBlobStorageTests
         Assert.Equal(bytes.Length, result.SizeBytes);
         Assert.Equal(bytes, await File.ReadAllBytesAsync(result.FullPath));
     }
+
+    [Fact]
+    public async Task SaveAsync_NullStream_ThrowsArgumentNullException()
+    {
+        using var root = new TempDirectory();
+        var sut = new DiskBlobStorage(new DiskBlobStorageOptions { BasePath = root.Path });
+
+        await Assert.ThrowsAsync<ArgumentNullException>(() => sut.SaveAsync(null!));
+    }
 }
