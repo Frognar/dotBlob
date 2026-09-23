@@ -55,7 +55,7 @@ public sealed record DiskBlobStorageOptions
         }
     }
 
-    public long MaxBlobSizeBytes { get; init; }
+    public required long MaxBlobSizeBytes { get; init; }
 }
 
 public sealed record BlobDescriptor
