@@ -11,11 +11,7 @@ public sealed class DiskBlobStorage(DiskBlobStorageOptions options)
     public async Task<BlobDescriptor> SaveAsync(Stream stream, BlobWriteOptions options, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(stream);
-        if (storageOptions.MaxBlobSizeBytes > 0 && stream.Length > storageOptions.MaxBlobSizeBytes)
-        {
-            throw new BlobSizeLimitExceededException();
-        }
-
+        AssertSizeWithinLimit(stream);
         var path = CreateBlobPath();
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         try
@@ -34,6 +30,14 @@ public sealed class DiskBlobStorage(DiskBlobStorageOptions options)
         {
             File.Delete(path);
             throw;
+        }
+    }
+    
+    private void AssertSizeWithinLimit(Stream stream)
+    {
+        if (storageOptions.MaxBlobSizeBytes > 0 && stream.Length > storageOptions.MaxBlobSizeBytes)
+        {
+            throw new BlobSizeLimitExceededException();
         }
     }
 
