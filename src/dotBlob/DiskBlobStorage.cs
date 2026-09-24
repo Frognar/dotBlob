@@ -1,4 +1,6 @@
-﻿namespace dotBlob;
+﻿using System.Security.Cryptography;
+
+namespace dotBlob;
 
 public sealed class DiskBlobStorage(DiskBlobStorageOptions options)
 {
@@ -16,14 +18,12 @@ public sealed class DiskBlobStorage(DiskBlobStorageOptions options)
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         try
         {
-            var length = await CopyToFileAsync(stream, path, ct);
+            var (length, hash) = await CopyToFileAsync(stream, path, options.ComputeSha256, ct);
             return new BlobDescriptor
             {
                 FullPath = path,
                 SizeBytes = length,
-                Sha256 = options.ComputeSha256
-                    ? "e997afd18e5f6be004fc193aed2c90291e68ab2c7599a62538c935b7fca6ab0f"
-                    : null,
+                Sha256 = hash,
             };
         }
         catch (IOException)
@@ -46,12 +46,29 @@ public sealed class DiskBlobStorage(DiskBlobStorageOptions options)
         var filename = Guid.CreateVersion7().ToString("N");
         return Path.Combine(storageOptions.BasePath, filename[..2], filename[2..4], filename + blobExtension);
     }
-
-    private static async Task<long> CopyToFileAsync(Stream source, string path, CancellationToken ct)
+    
+    private static async Task<(long Length, string? Sha256)> CopyToFileAsync(
+        Stream source,
+        string path,
+        bool computeHash,
+        CancellationToken ct)
     {
         await using var destination = File.Create(path);
-        await source.CopyToAsync(destination, ct);
-        return destination.Length;
+        string? hash = null;
+
+        if (computeHash)
+        {
+            using var sha256 = SHA256.Create();
+            await using var hashingStream = new CryptoStream(source, sha256, CryptoStreamMode.Read);
+            await hashingStream.CopyToAsync(destination, ct);
+            hash = Convert.ToHexString(sha256.Hash!).ToLowerInvariant();
+        }
+        else
+        {
+            await source.CopyToAsync(destination, ct);
+        }
+
+        return (destination.Length, hash);
     }
 }
 
