@@ -2,15 +2,16 @@
 
 public sealed class DiskBlobStorage(DiskBlobStorageOptions options)
 {
-    private const string BlobExtension = ".blob";
+    private const string blobExtension = ".blob";
+    private readonly DiskBlobStorageOptions storageOptions = options;
 
     public async Task<BlobDescriptor> SaveAsync(Stream stream, CancellationToken ct = default)
         => await SaveAsync(stream, new BlobWriteOptions(), ct);
 
-    public async Task<BlobDescriptor> SaveAsync(Stream stream, BlobWriteOptions writeOptions, CancellationToken ct = default)
+    public async Task<BlobDescriptor> SaveAsync(Stream stream, BlobWriteOptions options, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(stream);
-        if (options.MaxBlobSizeBytes > 0 && stream.Length > options.MaxBlobSizeBytes)
+        if (storageOptions.MaxBlobSizeBytes > 0 && stream.Length > storageOptions.MaxBlobSizeBytes)
         {
             throw new BlobSizeLimitExceededException();
         }
@@ -24,7 +25,7 @@ public sealed class DiskBlobStorage(DiskBlobStorageOptions options)
             {
                 FullPath = path,
                 SizeBytes = length,
-                Sha256 = writeOptions.ComputeSha256
+                Sha256 = options.ComputeSha256
                     ? new string('0', 64)
                     : null,
             };
@@ -39,7 +40,7 @@ public sealed class DiskBlobStorage(DiskBlobStorageOptions options)
     private string CreateBlobPath()
     {
         var filename = Guid.CreateVersion7().ToString("N");
-        return Path.Combine(options.BasePath, filename[..2], filename[2..4], filename + BlobExtension);
+        return Path.Combine(storageOptions.BasePath, filename[..2], filename[2..4], filename + blobExtension);
     }
 
     private static async Task<long> CopyToFileAsync(Stream source, string path, CancellationToken ct)
