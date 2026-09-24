@@ -15,10 +15,16 @@ public sealed class DiskBlobStorage(DiskBlobStorageOptions options)
         ArgumentNullException.ThrowIfNull(stream);
         AssertSizeWithinLimit(stream);
         var path = CreateBlobPath();
-        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        var directory = Path.GetDirectoryName(path)!;
+        Directory.CreateDirectory(directory);
+        
+        var temporaryPath = Path.Combine(
+            directory, $".upload-{Guid.NewGuid():N}.tmp");
         try
         {
-            var (length, hash) = await CopyToFileAsync(stream, path, options.ComputeSha256, ct);
+            var (length, hash) = await CopyToFileAsync(stream, temporaryPath, options.ComputeSha256, ct);
+            ct.ThrowIfCancellationRequested();
+            File.Move(temporaryPath, path, overwrite: false);
             return new BlobDescriptor
             {
                 FullPath = path,
