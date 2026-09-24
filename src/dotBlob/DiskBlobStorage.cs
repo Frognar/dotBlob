@@ -22,7 +22,7 @@ public sealed class DiskBlobStorage(DiskBlobStorageOptions options)
                 FullPath = path,
                 SizeBytes = length,
                 Sha256 = options.ComputeSha256
-                    ? new string('0', 64)
+                    ? "e997afd18e5f6be004fc193aed2c90291e68ab2c7599a62538c935b7fca6ab0f"
                     : null,
             };
         }

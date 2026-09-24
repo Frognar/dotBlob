@@ -97,7 +97,7 @@ public class DiskBlobStorageTests
     }
 
     [Fact]
-    public async Task SaveAsync_WithSha256_ComputesCorrectHash()
+    public async Task SaveAsync_WithSha256_ComputesHash()
     {
         using var root = new TempDirectory();
         var sut = PrepareSut(root.Path);
@@ -109,5 +109,20 @@ public class DiskBlobStorageTests
 
         Assert.NotNull(result.Sha256);
         Assert.Equal(64, result.Sha256.Length);
+    }
+    
+    [Fact]
+    public async Task SaveAsync_WithSha256_ComputesCorrectHash()
+    {
+        using var root = new TempDirectory();
+        var sut = PrepareSut(root.Path);
+        var data = "hello blob"u8.ToArray();
+        var expectedHash = "e997afd18e5f6be004fc193aed2c90291e68ab2c7599a62538c935b7fca6ab0f";
+
+        var result = await sut.SaveAsync(
+            new MemoryStream(data),
+            new BlobWriteOptions { ComputeSha256 = true });
+
+        Assert.Equal(expectedHash, result.Sha256);
     }
 }
