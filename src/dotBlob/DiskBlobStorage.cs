@@ -5,6 +5,9 @@ public sealed class DiskBlobStorage(DiskBlobStorageOptions options)
     private const string BlobExtension = ".blob";
 
     public async Task<BlobDescriptor> SaveAsync(Stream stream, CancellationToken ct = default)
+        => await SaveAsync(stream, new BlobWriteOptions(), ct);
+
+    public async Task<BlobDescriptor> SaveAsync(Stream stream, BlobWriteOptions writeOptions, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(stream);
         if (options.MaxBlobSizeBytes > 0 && stream.Length > options.MaxBlobSizeBytes)
@@ -17,9 +20,13 @@ public sealed class DiskBlobStorage(DiskBlobStorageOptions options)
         try
         {
             var length = await CopyToFileAsync(stream, path, ct);
-            return new BlobDescriptor {
+            return new BlobDescriptor
+            {
                 FullPath = path,
                 SizeBytes = length,
+                Sha256 = writeOptions.ComputeSha256
+                    ? new string('0', 64)
+                    : null,
             };
         }
         catch (IOException)
@@ -62,6 +69,12 @@ public sealed record BlobDescriptor
 {
     public required string FullPath { get; init; }
     public required long SizeBytes { get; init; }
+    public required string? Sha256 { get; init; }
+}
+
+public sealed record BlobWriteOptions
+{
+    public bool ComputeSha256 { get; init; }
 }
 
 public sealed class BlobSizeLimitExceededException : Exception;
