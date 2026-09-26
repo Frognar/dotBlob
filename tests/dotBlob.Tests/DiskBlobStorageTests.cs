@@ -5,26 +5,17 @@ public class DiskBlobStorageTests
     private static DiskBlobStorage CreateStorage(string basePath, long maxBlobSizeBytes = 0)
         => new(new DiskBlobStorageOptions { BasePath = basePath, MaxBlobSizeBytes = maxBlobSizeBytes });
 
-    [Fact]
-    public async Task SaveAsync_EmptyStream_CreatesBlobWithZeroSize()
+    [Theory]
+    [InlineData("")]
+    [InlineData("hello blob")]
+    public async Task SaveAsync_WritesContentAndReportsSize(string content)
     {
         using var root = new TempDirectory();
         var sut = CreateStorage(root.Path);
+        var bytes = System.Text.Encoding.UTF8.GetBytes(content);
+        using var stream = new MemoryStream(bytes);
 
-        var result = await sut.SaveAsync(new MemoryStream());
-
-        Assert.Equal(0, result.SizeBytes);
-        Assert.True(File.Exists(result.FullPath));
-    }
-
-    [Fact]
-    public async Task SaveAsync_NonEmptyStream_WritesCorrectSizeAndContent()
-    {
-        using var root = new TempDirectory();
-        var sut = CreateStorage(root.Path);
-        var bytes = "hello blob"u8.ToArray();
-
-        var result = await sut.SaveAsync(new MemoryStream(bytes));
+        var result = await sut.SaveAsync(stream);
 
         Assert.Equal(bytes.Length, result.SizeBytes);
         Assert.Equal(bytes, await File.ReadAllBytesAsync(result.FullPath));
