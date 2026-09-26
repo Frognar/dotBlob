@@ -5,6 +5,9 @@ public class DiskBlobStorageTests
     private static DiskBlobStorage CreateStorage(string basePath, long maxBlobSizeBytes = 0)
         => new(new DiskBlobStorageOptions { BasePath = basePath, MaxBlobSizeBytes = maxBlobSizeBytes });
 
+    private static void AssertNoBlobFiles(string basePath)
+        => Assert.Empty(Directory.GetFiles(basePath, "*.blob", SearchOption.AllDirectories));
+
     [Theory]
     [InlineData("")]
     [InlineData("hello blob")]
@@ -13,7 +16,7 @@ public class DiskBlobStorageTests
         using var root = new TempDirectory();
         var sut = CreateStorage(root.Path);
         var bytes = System.Text.Encoding.UTF8.GetBytes(content);
-        using var stream = new MemoryStream(bytes);
+        await using var stream = new MemoryStream(bytes);
 
         var result = await sut.SaveAsync(stream);
 
@@ -26,7 +29,7 @@ public class DiskBlobStorageTests
     {
         using var root = new TempDirectory();
         var sut = CreateStorage(root.Path);
-        using var stream = new MemoryStream([.. "hello blob"u8]);
+        await using var stream = new MemoryStream([.. "hello blob"u8]);
 
         var result = await sut.SaveAsync(stream);
 
@@ -56,26 +59,25 @@ public class DiskBlobStorageTests
     }
 
     [Fact]
-    public async Task SaveAsync_FailureDuringCopy_NoFinalBlobCreated()
+    public async Task SaveAsync_FailureDuringCopy_LeavesNoFinalBlob()
     {
         using var root = new TempDirectory();
         var sut = CreateStorage(root.Path);
         await using var failingStream = new FailingReadStream(failAfter: 3);
 
         await Assert.ThrowsAsync<IOException>(() => sut.SaveAsync(failingStream));
-        Assert.Empty(Directory.GetFiles(root.Path, "*.blob"));
+        AssertNoBlobFiles(root.Path);
     }
 
     [Fact]
-    public async Task SaveAsync_ExceedsMaxBlobSize_ThrowsAndLeavesNoFile()
+    public async Task SaveAsync_ExceedsMaxBlobSize_LeavesNoFinalBlob()
     {
         using var root = new TempDirectory();
         var sut = CreateStorage(root.Path, maxBlobSizeBytes: 5);
-        var data = new byte[10];
+        await using var stream = new MemoryStream(new byte[10]);
 
-        await Assert.ThrowsAsync<BlobSizeLimitExceededException>(() => sut.SaveAsync(new MemoryStream(data)));
-
-        Assert.Empty(Directory.GetFiles(root.Path, "*.blob", SearchOption.AllDirectories));
+        await Assert.ThrowsAsync<BlobSizeLimitExceededException>(() => sut.SaveAsync(stream));
+        AssertNoBlobFiles(root.Path);
     }
     
     [Fact]
@@ -84,7 +86,7 @@ public class DiskBlobStorageTests
         using var root = new TempDirectory();
         var sut = CreateStorage(root.Path);
         var data = "hello blob"u8.ToArray();
-        var expectedHash = "e997afd18e5f6be004fc193aed2c90291e68ab2c7599a62538c935b7fca6ab0f";
+        const string expectedHash = "e997afd18e5f6be004fc193aed2c90291e68ab2c7599a62538c935b7fca6ab0f";
 
         var result = await sut.SaveAsync(
             new MemoryStream(data),
