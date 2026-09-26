@@ -68,6 +68,19 @@ public class DiskBlobStorageTests
         await Assert.ThrowsAsync<IOException>(() => sut.SaveAsync(failingStream));
         AssertNoBlobFiles(root.Path);
     }
+    
+    [Fact]
+    public async Task SaveAsync_FailureDuringCopy_LeavesNoTemporaryFile()
+    {
+        using var root = new TempDirectory();
+        var sut = CreateStorage(root.Path);
+        await using var failingStream = new FailingReadStream(failAfter: 3);
+
+        await Assert.ThrowsAsync<IOException>(() => sut.SaveAsync(failingStream));
+
+        Assert.Empty(Directory.GetFiles(
+            root.Path, "*", SearchOption.AllDirectories));
+    }
 
     [Fact]
     public async Task SaveAsync_ExceedsMaxBlobSize_LeavesNoFinalBlob()
@@ -85,11 +98,11 @@ public class DiskBlobStorageTests
     {
         using var root = new TempDirectory();
         var sut = CreateStorage(root.Path);
-        var data = "hello blob"u8.ToArray();
+        await using var stream = new MemoryStream([.. "hello blob"u8]);
         const string expectedHash = "e997afd18e5f6be004fc193aed2c90291e68ab2c7599a62538c935b7fca6ab0f";
 
         var result = await sut.SaveAsync(
-            new MemoryStream(data),
+            stream,
             new BlobWriteOptions { ComputeSha256 = true });
 
         Assert.Equal(expectedHash, result.Sha256);

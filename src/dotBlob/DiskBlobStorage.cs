@@ -34,7 +34,7 @@ public sealed class DiskBlobStorage(DiskBlobStorageOptions options)
         }
         catch (IOException)
         {
-            File.Delete(path);
+            File.Delete(temporaryPath);
             throw;
         }
     }
