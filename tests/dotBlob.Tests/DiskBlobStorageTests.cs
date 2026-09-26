@@ -20,16 +20,23 @@ public class DiskBlobStorageTests
         Assert.Equal(bytes.Length, result.SizeBytes);
         Assert.Equal(bytes, await File.ReadAllBytesAsync(result.FullPath));
     }
-
+    
     [Fact]
-    public async Task SaveAsync_CreatesFileWithBlobExtension()
+    public async Task SaveAsync_CreatesBlobInTwoShardedDirectories()
     {
         using var root = new TempDirectory();
         var sut = CreateStorage(root.Path);
+        using var stream = new MemoryStream([.. "hello blob"u8]);
 
-        var result = await sut.SaveAsync(new MemoryStream([1, 2, 3]));
+        var result = await sut.SaveAsync(stream);
 
-        Assert.EndsWith(".blob", result.FullPath);
+        var relativePath = Path.GetRelativePath(root.Path, result.FullPath);
+        var parts = relativePath.Split(Path.DirectorySeparatorChar);
+
+        Assert.Equal(3, parts.Length);
+        Assert.Matches("^[0-9a-f]{2}$", parts[0]);
+        Assert.Matches("^[0-9a-f]{2}$", parts[1]);
+        Assert.EndsWith(".blob", parts[2]);
         Assert.True(File.Exists(result.FullPath));
     }
 
@@ -57,22 +64,6 @@ public class DiskBlobStorageTests
 
         await Assert.ThrowsAsync<IOException>(() => sut.SaveAsync(failingStream));
         Assert.Empty(Directory.GetFiles(root.Path, "*.blob"));
-    }
-
-    [Fact]
-    public async Task SaveAsync_CreatesShardedDirectoryStructure()
-    {
-        using var root = new TempDirectory();
-        var sut = CreateStorage(root.Path);
-
-        var result = await sut.SaveAsync(new MemoryStream([1, 2, 3]));
-
-        var expectedDirs = Path.GetDirectoryName(result.FullPath)![root.Path.Length..]
-            .Split(Path.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries);
-        
-        Assert.Equal(2, expectedDirs.Length);
-        Assert.Matches("^[0-9a-f]{2}$", expectedDirs[0]);
-        Assert.Matches("^[0-9a-f]{2}$", expectedDirs[1]);
     }
 
     [Fact]
