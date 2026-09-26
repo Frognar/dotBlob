@@ -77,32 +77,3 @@ public sealed class DiskBlobStorage(DiskBlobStorageOptions options)
         return (destination.Length, hash);
     }
 }
-
-public sealed record DiskBlobStorageOptions
-{
-    public required string BasePath
-    {
-        get;
-        init
-        {
-            ArgumentException.ThrowIfNullOrEmpty(value);
-            field = value;
-        }
-    }
-
-    public required long MaxBlobSizeBytes { get; init; }
-}
-
-public sealed record BlobDescriptor
-{
-    public required string FullPath { get; init; }
-    public required long SizeBytes { get; init; }
-    public required string? Sha256 { get; init; }
-}
-
-public sealed record BlobWriteOptions
-{
-    public bool ComputeSha256 { get; init; }
-}
-
-public sealed class BlobSizeLimitExceededException : Exception;
